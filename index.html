@@ -77,15 +77,26 @@
          *   4) 만료 기간을 짧게(예: 30~90일) 설정하고, 대회가 끝나면 즉시 폐기(revoke)
          * 이 페이지를 불특정 다수에게 공유하는 순간, 그 사람들도 이 토큰으로
          * invest_game_thehunters 저장소의 data 파일을 마음대로 덮어쓸 수 있다는 점을 감안하세요.
+         *
+         * 토큰은 이 파일(git)에 절대 저장하지 않습니다 (GitHub push protection이
+         * 실제로 이를 막습니다). 대신 각자 브라우저에서 최초 1회 입력받아
+         * localStorage에만 저장하고, 이후에는 그 값을 재사용합니다.
          * ==================================================================== */
         const GITHUB_CONFIG = {
             owner: 'hyeonsooj',
             repo: 'invest_game_thehunters',
             branch: 'main',
             path: 'data/mock-investment-data.json',
-            leaderboardPath: 'LEADERBOARD.md', // 그룹/참가자/수익률을 표로 보여주는 자동 생성 파일
-            token: 'YOUR_GITHUB_FINE_GRAINED_TOKEN' // TODO: 발급받은 토큰으로 교체하세요
+            leaderboardPath: 'LEADERBOARD.md' // 그룹/참가자/수익률을 표로 보여주는 자동 생성 파일
         };
+        function getGithubToken() {
+            let t = localStorage.getItem('gh_token_invest_game');
+            if (!t) {
+                t = prompt('GitHub 토큰을 입력하세요.\n(이 브라우저에만 저장되며 GitHub 저장소에는 올라가지 않습니다)');
+                if (t) localStorage.setItem('gh_token_invest_game', t.trim());
+            }
+            return t ? t.trim() : '';
+        }
 
         Chart.register(ChartDataLabels);
 
@@ -105,11 +116,18 @@
             return `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${path}`;
         }
         function ghHeaders(extra) {
-            return Object.assign({ 'Authorization': `Bearer ${GITHUB_CONFIG.token}`, 'Accept': 'application/vnd.github+json' }, extra || {});
+            return Object.assign({ 'Authorization': `Bearer ${getGithubToken()}`, 'Accept': 'application/vnd.github+json' }, extra || {});
+        }
+        function ghHandleAuthFailure(res) {
+            if (res.status === 401 || res.status === 403) {
+                localStorage.removeItem('gh_token_invest_game');
+                throw new Error('GitHub 토큰이 잘못되었거나 권한이 없습니다. 새로고침 후 토큰을 다시 입력해주세요.');
+            }
         }
         async function ghReadFile(path) {
             const res = await fetch(`${ghUrl(path)}?ref=${GITHUB_CONFIG.branch}&_=${Date.now()}`, { headers: ghHeaders() });
             if (res.status === 404) return { sha: null, text: null };
+            ghHandleAuthFailure(res);
             if (!res.ok) throw new Error(`GitHub 읽기 실패 (${res.status})`);
             const json = await res.json();
             return { sha: json.sha, text: b64DecodeUnicode(json.content.replace(/\n/g, '')) };
@@ -119,6 +137,7 @@
             if (sha) body.sha = sha;
             const res = await fetch(ghUrl(path), { method: 'PUT', headers: ghHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify(body) });
             if (res.status === 409) { const e = new Error('CONFLICT'); e.conflict = true; throw e; }
+            ghHandleAuthFailure(res);
             if (!res.ok) throw new Error(`GitHub 저장 실패 (${res.status})`);
             return res.json();
         }
