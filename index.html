@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>모의투자 대회 최종 시스템</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <style>.screen { display: none; } .active-screen { display: flex; }</style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans">
+
+    <div id="screen-main" class="screen active-screen min-h-screen items-center justify-center p-4">
+        <div class="max-w-md w-full bg-white p-8 rounded-3xl shadow-2xl">
+            <h1 class="text-2xl font-bold mb-6 text-center">모의투자 대회</h1>
+            <div class="flex flex-col gap-2 mb-4">
+                <input type="text" id="nickname" placeholder="닉네임 입력" class="px-4 py-3 border rounded-xl">
+                <button onclick="handleNickname()" id="nick-btn" class="bg-slate-800 text-white py-3 rounded-xl font-bold">확인</button>
+                <div id="status-msg" class="text-sm font-bold text-blue-600 text-center h-5"></div>
+                <input type="text" id="search-group" oninput="renderGroups()" placeholder="그룹 검색..." class="px-4 py-2 border rounded-xl text-sm">
+                <div id="state-display" class="text-xs text-gray-500 text-center font-bold">닉네임 - 그룹 미선택</div>
+            </div>
+            <div id="group-list" class="h-40 overflow-y-auto border rounded-xl p-2 space-y-2 text-sm mb-4"></div>
+            <button onclick="handleMainButton()" id="main-btn" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold hidden">참가 확정</button>
+            <div class="grid grid-cols-2 gap-2 mt-2">
+                <button onclick="adminAction('create')" class="text-xs bg-slate-100 py-2 rounded-lg text-slate-600">그룹 생성</button>
+                <button onclick="adminAction('reset')" class="text-xs bg-red-100 py-2 rounded-lg text-red-600">데이터 초기화</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-container" class="hidden fixed inset-0 bg-slate-50 z-50 flex items-center justify-center p-4">
+        <div id="modal-content" class="bg-white p-8 rounded-3xl max-w-sm w-full shadow-2xl"></div>
+    </div>
+
+    <div id="screen-game" class="screen min-h-screen items-center justify-center p-4">
+        <div id="game-ui" class="max-w-2xl w-full bg-white p-10 rounded-3xl shadow-2xl">
+            <div class="flex justify-between items-center mb-6">
+                <h2 id="round-title" class="text-2xl font-black"></h2>
+                <span class="bg-slate-800 text-white text-[10px] px-3 py-1 rounded-full">기간: 2024.06~2026.06</span>
+            </div>
+            <p id="price-display" class="text-lg font-bold text-slate-700 mb-4"></p>
+            <div id="trade-alert" class="hidden text-red-500 font-bold text-center mb-4 animate-pulse">⚠️ 대회 중 매수/매도 1번은 해야 합니다!</div>
+            <div class="w-full h-64 mb-6"><canvas id="stockChart"></canvas></div>
+            <div class="bg-slate-100 p-6 rounded-2xl mb-6 flex justify-between items-center">
+                <div><p class="text-sm text-slate-500">예수금</p><p id="cash-display" class="text-2xl font-black text-blue-600">500,000</p></div>
+                <div><p class="text-sm text-slate-500">보유 주식</p><p id="stock-display" class="text-2xl font-black text-emerald-600">0</p></div>
+            </div>
+            <div id="trade-input-area" class="mb-6 flex gap-2">
+                <input type="number" id="qty-input" min="0" class="flex-grow p-4 border rounded-xl text-center text-lg font-bold" placeholder="수량 입력 후 사기/팔기 버튼 클릭">
+                <button onclick="trade('buy')" class="bg-red-500 text-white px-8 rounded-xl font-bold text-lg">사기</button>
+                <button onclick="trade('sell')" class="bg-blue-500 text-white px-8 rounded-xl font-bold text-lg">팔기</button>
+            </div>
+            <button id="next-btn" onclick="nextQuarter()" class="w-full bg-slate-800 text-white py-4 rounded-xl font-bold">다음</button>
+        </div>
+        <div id="result-ui" class="hidden max-w-lg w-full bg-white p-8 rounded-3xl shadow-2xl text-center">
+            <h2 id="result-title" class="text-2xl font-bold mb-4">결과</h2>
+            <div id="stats-box" class="mb-6 text-left text-sm space-y-2"></div>
+            <button id="result-btn" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-bold"></button>
+        </div>
+    </div>
+
+    <script>
+        /* ====================================================================
+         * GitHub 저장소를 참가자 DB로 사용합니다 (Firebase 미사용).
+         * 이 리포지토리(GITHUB_CONFIG.owner/repo)의 data/ 폴더에 있는 JSON 파일을
+         * GitHub Contents API로 읽고 씁니다.
+         *
+         * ⚠️ 보안 주의 ⚠️
+         * 이 페이지는 순수 정적 HTML이라 별도 서버가 없으므로, GitHub에 쓰기 위한
+         * Personal Access Token을 아래 TOKEN 값에 직접 넣어야 합니다. 이 토큰은
+         * 누구든 이 페이지의 "소스 보기"만 하면 그대로 볼 수 있습니다.
+         * 반드시 아래 조건을 지켜서 토큰을 만드세요:
+         *   1) Fine-grained personal access token 사용 (classic token 금지)
+         *   2) Repository access를 이 저장소(marcap) 하나로만 제한
+         *   3) Permissions는 "Contents: Read and write" 하나만 부여
+         *   4) 만료 기간을 짧게(예: 30~90일) 설정하고, 대회가 끝나면 즉시 폐기(revoke)
+         * 이 페이지를 불특정 다수에게 공유하는 순간, 그 사람들도 이 토큰으로
+         * invest_game_thehunters 저장소의 data 파일을 마음대로 덮어쓸 수 있다는 점을 감안하세요.
+         * ==================================================================== */
+        const GITHUB_CONFIG = {
+            owner: 'hyeonsooj',
+            repo: 'invest_game_thehunters',
+            branch: 'main',
+            path: 'data/mock-investment-data.json',
+            leaderboardPath: 'LEADERBOARD.md', // 그룹/참가자/수익률을 표로 보여주는 자동 생성 파일
+            token: 'YOUR_GITHUB_FINE_GRAINED_TOKEN' // TODO: 발급받은 토큰으로 교체하세요
+        };
+
+        Chart.register(ChartDataLabels);
+
+        let state = { nick: "", group: "", isConfirmed: false, myDocId: null, currentRound: 0, currentQ: 0, cash: 500000, stockQty: 0, r1FinalCash: 500000, hasTraded: false };
+        const rounds = [{ name: "1라운드", stock: "마녀공장", prices: [27050, 21250, 16370, 16200, 18130] }, { name: "2라운드", stock: "카카오", prices: [43300, 37350, 40550, 43000, 43700] }];
+        const labels = ['2024년 06월', '2024년 09월', '2024년 12월', '2025년 03월', '종가'];
+        const hints = [`<h2 class="text-xl font-bold mb-4">1라운드(마녀공장)</h2><div class="text-sm space-y-3 text-left"><p>🟢 <b>미국·일본 수출 확대</b><br>K-뷰티 수출이 미국과 일본을 중심으로 성장하면서 해외 매출 확대 기대가 높아지고 있습니다.</p><p>🟢 <b>해외 채널 확장</b><br>아마존과 일본 드럭스토어 등 해외 판매 채널 확대를 추진하고 있습니다.</p><p>🔴 <b>높은 성장 기대감</b><br>상장 이후 성장 기대가 높아진 상태로 향후 실적이 기대에 못 미칠 경우 주가 변동성이 확대될 수 있습니다.</p><p>🔴 <b>치열한 경쟁</b><br>K-뷰티 시장에는 다수의 중소·중견 브랜드가 경쟁하고 있어 지속적인 브랜드 경쟁력 확보가 필요합니다.</p></div>`, `<h2 class="text-xl font-bold mb-4">2라운드(카카오)</h2><div class="text-sm space-y-3 text-left"><p>🟢 <b>1분기 영업이익 92% 증가</b><br>2024년 1분기 영업이익이 1,203억 원으로 전년 동기 대비 92% 증가했으며 톡비즈 매출도 8% 성장했습니다.</p><p>🟢 <b>AI 조직 재편</b><br>카카오는 2024년 5월 카카오브레인의 초거대 AI 모델 사업을 흡수하며 AI 서비스 개발 역량을 집중하고 있습니다.</p><p>🔴 <b>플랫폼 규제</b><br>카카오모빌리티와 플랫폼 사업에 대한 규제 논의 및 공정위 조사가 2024년에도 계속되고 있습니다.</p><p>🔴 <b>실적 기대치 부담</b><br>영업이익은 전년 대비 크게 증가했지만 일부 증권사 예상치에는 미치지 못했다는 평가도 나왔습니다.</p></div><p class="text-xs text-gray-400 mt-4">* 2024년 1월~2024년 6월까지 정보입니다. 참고만 하시길 바랍니다.</p>`];
+
+        // ---------------- GitHub Contents API 헬퍼 ----------------
+        function b64EncodeUnicode(str) {
+            return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (_, p1) => String.fromCharCode('0x' + p1)));
+        }
+        function b64DecodeUnicode(str) {
+            return decodeURIComponent(atob(str).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+        }
+        function ghUrl(path) {
+            return `https://api.github.com/repos/${GITHUB_CONFIG.owner}/${GITHUB_CONFIG.repo}/contents/${path}`;
+        }
+        function ghHeaders(extra) {
+            return Object.assign({ 'Authorization': `Bearer ${GITHUB_CONFIG.token}`, 'Accept': 'application/vnd.github+json' }, extra || {});
+        }
+        async function ghReadFile(path) {
+            const res = await fetch(`${ghUrl(path)}?ref=${GITHUB_CONFIG.branch}&_=${Date.now()}`, { headers: ghHeaders() });
+            if (res.status === 404) return { sha: null, text: null };
+            if (!res.ok) throw new Error(`GitHub 읽기 실패 (${res.status})`);
+            const json = await res.json();
+            return { sha: json.sha, text: b64DecodeUnicode(json.content.replace(/\n/g, '')) };
+        }
+        async function ghWriteFile(path, text, sha, message) {
+            const body = { message, content: b64EncodeUnicode(text), branch: GITHUB_CONFIG.branch };
+            if (sha) body.sha = sha;
+            const res = await fetch(ghUrl(path), { method: 'PUT', headers: ghHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify(body) });
+            if (res.status === 409) { const e = new Error('CONFLICT'); e.conflict = true; throw e; }
+            if (!res.ok) throw new Error(`GitHub 저장 실패 (${res.status})`);
+            return res.json();
+        }
+        async function ghReadData() {
+            const { sha, text } = await ghReadFile(GITHUB_CONFIG.path);
+            const data = JSON.parse(text || '{}');
+            if (!data.groups) data.groups = [];
+            if (!data.participants) data.participants = [];
+            return { sha, data };
+        }
+        // 동시 편집 충돌(409) 시 최신본을 다시 읽어 재시도합니다.
+        async function ghMutate(mutator, message) {
+            for (let i = 0; i < 5; i++) {
+                const { sha, data } = await ghReadData();
+                mutator(data);
+                try {
+                    await ghWriteFile(GITHUB_CONFIG.path, JSON.stringify(data, null, 2), sha, message);
+                    await syncLeaderboardMarkdown(data);
+                    return data;
+                } catch (e) {
+                    if (e.conflict) { await new Promise(r => setTimeout(r, 300 + Math.random() * 400)); continue; }
+                    throw e;
+                }
+            }
+            throw new Error('저장 충돌이 반복되어 실패했습니다. 다시 시도해주세요.');
+        }
+        function uid() {
+            return (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`);
+        }
+
+        // groups/participants 데이터를 GitHub 저장소 메인에서 바로 읽을 수 있는 표(Markdown)로 만들어 커밋합니다.
+        function buildLeaderboardMarkdown(data) {
+            const byGroup = {};
+            data.groups.forEach(g => { byGroup[g.name] = []; });
+            data.participants.forEach(p => { (byGroup[p.group] || (byGroup[p.group] = [])).push(p); });
+            const groupNames = Object.keys(byGroup).sort((a, b) => a.localeCompare(b));
+            const now = new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
+            let md = `# 모의투자 대회 리더보드\n\n_마지막 업데이트: ${now} (KST)_\n\n`;
+            if (groupNames.length === 0) { md += '아직 생성된 그룹이 없습니다.\n'; return md; }
+            groupNames.forEach(name => {
+                const list = [...byGroup[name]].sort((a, b) => (b.profit || 0) - (a.profit || 0));
+                md += `## ${name} (${list.length}명)\n\n`;
+                if (list.length === 0) { md += '참가자가 없습니다.\n\n'; return; }
+                md += '| 순위 | 닉네임 | 수익률 |\n|---|---|---|\n';
+                list.forEach((p, i) => { md += `| ${i + 1} | ${p.nickname} | ${(p.profit || 0).toFixed(2)}% |\n`; });
+                md += '\n';
+            });
+            return md;
+        }
+        async function syncLeaderboardMarkdown(data) {
+            for (let i = 0; i < 5; i++) {
+                try {
+                    const { sha } = await ghReadFile(GITHUB_CONFIG.leaderboardPath);
+                    await ghWriteFile(GITHUB_CONFIG.leaderboardPath, buildLeaderboardMarkdown(data), sha, 'update leaderboard');
+                    return;
+                } catch (e) {
+                    if (e.conflict) { await new Promise(r => setTimeout(r, 300 + Math.random() * 400)); continue; }
+                    console.error('리더보드 갱신 실패', e);
+                    return;
+                }
+            }
+        }
+
+        function handleNickname() { const n = document.getElementById('nickname').value; if(!n) return alert("닉네임 필수!"); state.nick = n; alert("한 번 입력하면 수정이 불가능합니다 ! 수정을 원하시면 새로고침을 눌러주세요 !"); document.getElementById('status-msg').innerText = `${n} 님 화이팅!!`; document.getElementById('nickname').disabled = true; document.getElementById('nick-btn').style.display = 'none'; }
+        function openModal(html, callback) { document.getElementById('modal-container').classList.remove('hidden'); document.getElementById('modal-content').innerHTML = html + `<button onclick="closeModal()" class="w-full mt-6 bg-blue-600 text-white py-3 rounded-xl font-bold">확인</button>`; window.nextAction = callback; }
+        function closeModal() { document.getElementById('modal-container').classList.add('hidden'); if(window.nextAction) window.nextAction(); }
+        function showHint(idx) { if(idx === 1) { state.stockQty = 0; } openModal(hints[idx], () => { document.getElementById('screen-main').style.display = 'none'; document.getElementById('screen-game').style.display = 'flex'; state.currentRound = idx; state.currentQ = 0; initChart(); updateGameUI(); }); }
+
+        async function renderGroups() {
+            const k = document.getElementById('search-group').value.toLowerCase();
+            let data;
+            try { ({ data } = await ghReadData()); } catch (e) { console.error(e); return; }
+            const groups = [...data.groups].sort((a, b) => a.name.localeCompare(b.name));
+            const cnt = {};
+            data.participants.forEach(p => { cnt[p.group] = (cnt[p.group] || 0) + 1; });
+            const list = document.getElementById('group-list'); list.innerHTML = '';
+            groups.forEach(g => {
+                if (!g.name.toLowerCase().includes(k)) return;
+                const div = document.createElement('div'); div.className = `p-3 border rounded cursor-pointer flex justify-between ${state.group === g.name ? 'bg-blue-50 border-blue-500' : ''}`;
+                div.innerHTML = `<span ondblclick="updateGroupName('${g.id}', '${g.name}')">${g.name}</span> <span class="font-bold text-blue-600">${cnt[g.name] || 0}명</span>`;
+                div.onclick = () => selectGroup(g.name); list.appendChild(div);
+            });
+        }
+        async function selectGroup(n) {
+            if (state.group === n) return;
+            if (state.group && !confirm("그룹 변경 시 기존 정보 삭제됩니다.")) return;
+            if (state.myDocId) {
+                const myId = state.myDocId;
+                await ghMutate(data => { data.participants = data.participants.filter(p => p.id !== myId); }, `remove participant ${myId}`);
+                state.myDocId = null;
+            }
+            state.group = n; state.isConfirmed = false;
+            document.getElementById('main-btn').classList.remove('hidden', 'bg-emerald-600');
+            document.getElementById('main-btn').innerText = "참가 확정";
+            document.getElementById('state-display').innerText = `${state.nick || "닉네임"} - ${n}`;
+            renderGroups();
+        }
+        async function handleMainButton() {
+            if(!state.isConfirmed) {
+                if(!state.nick) return alert("닉네임 필수!");
+                const { data } = await ghReadData();
+                const exists = data.participants.some(p => p.group === state.group && p.nickname === state.nick);
+                if (exists) return alert("이미 존재하는 닉네임입니다.");
+                const newId = uid();
+                await ghMutate(d => { d.participants.push({ id: newId, nickname: state.nick, group: state.group, profit: 0 }); }, `add participant ${state.nick}`);
+                state.myDocId = newId; state.isConfirmed = true;
+                document.getElementById('main-btn').innerText = "대회 시작하기";
+                document.getElementById('main-btn').classList.add('bg-emerald-600');
+            } else {
+                openModal(`<h2 class="text-xl font-bold mb-4">모의투자대회 설명</h2><div class="text-sm text-left space-y-2"><p>1. 대회는 총 2라운드로 구성되고 각 라운드별 4번의 매수/매도 기회가 있습니다.</p><p>2. 투자기간 : 2024.06~2025.06</p><p>3. 대회 중 매수/매도 1번은 진행해야 합니다.</p><p>4. 재미로 즐겨주시면 감사하겠습니다 !! 화이팅 !!</p></div>`, () => showHint(0));
+            }
+        }
+        async function adminAction(t) {
+            if (prompt("관리자 비밀번호:") !== "1011") return;
+            if (t === 'reset') {
+                await ghMutate(data => { data.participants = []; }, 'reset participants');
+                location.reload();
+            } else if (t === 'create') {
+                const n = prompt("그룹명:");
+                if(n) await ghMutate(data => { data.groups.push({ id: uid(), name: n }); }, `create group ${n}`);
+                renderGroups();
+            }
+        }
+        async function updateGroupName(id, old) {
+            if (prompt("관리자 비밀번호:") !== "1011") return;
+            const n = prompt("새 그룹명:", old);
+            if(n) { await ghMutate(data => { const g = data.groups.find(x => x.id === id); if (g) g.name = n; }, `rename group ${id}`); renderGroups(); }
+        }
+
+        function initChart() { const ctx = document.getElementById('stockChart').getContext('2d'); if(window.myChart) myChart.destroy(); myChart = new Chart(ctx, { type: 'line', data: { labels: [], datasets: [{ label: '가격', data: [], borderColor: '#3b82f6', datalabels: { anchor: 'end', align: 'top', formatter: (v) => v.toLocaleString() } }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { datalabels: { display: true } } } }); }
+        function updateGameUI() { const isC = state.currentQ === 4; document.getElementById('round-title').innerText = `${state.currentRound + 1}라운드 - ${rounds[state.currentRound].stock}(${isC ? '종가' : (state.currentQ + 1) + '분기'})`; document.getElementById('price-display').innerText = `현재가 : ${rounds[state.currentRound].prices[state.currentQ].toLocaleString()}원`; document.getElementById('cash-display').innerText = state.cash.toLocaleString(); document.getElementById('stock-display').innerText = state.stockQty; document.getElementById('trade-input-area').style.display = isC ? 'none' : 'flex'; myChart.data.labels = labels.slice(0, state.currentQ + 1); myChart.data.datasets[0].data = rounds[state.currentRound].prices.slice(0, state.currentQ + 1); myChart.update(); }
+        function trade(t) { const q = parseInt(document.getElementById('qty-input').value); if(isNaN(q) || q <= 0) return alert("1 이상의 수량을 입력하세요"); if(!confirm(`${q}주를 ${t === 'buy' ? '사시겠습니까?' : '파시겠습니까?'}`)) return; if(q > 0) state.hasTraded = true; const p = rounds[state.currentRound].prices[state.currentQ]; if(t === 'buy') { if(state.cash < q * p) return alert("예수금 부족"); state.cash -= q * p; state.stockQty += q; } else { if(state.stockQty < q) return alert("보유 주식 부족"); state.cash += q * p; state.stockQty -= q; } updateGameUI(); }
+        function nextQuarter() {
+            if (state.currentRound === 1 && state.currentQ === 3 && !state.hasTraded) return alert("대회 중 매수/매도 1번은 해야 합니다!");
+            if(state.currentQ < 3) { state.currentQ++; updateGameUI(); }
+            else if(state.currentQ === 3) { if (state.stockQty > 0) { state.cash += state.stockQty * rounds[state.currentRound].prices[4]; state.stockQty = 0; } state.currentQ = 4; updateGameUI(); }
+            else { showResult(state.currentRound === 1, state.cash); }
+
+            const qtyInput = document.getElementById('qty-input');
+            qtyInput.value = '';
+            qtyInput.placeholder = '수량 입력 후 사기/팔기 버튼 클릭';
+        }
+        function showResult(isF, f) { document.getElementById('game-ui').classList.add('hidden'); document.getElementById('result-ui').classList.remove('hidden'); let initialCash = !isF ? 500000 : state.r1FinalCash; let profit = (f / initialCash * 100 - 100); if (!isF) { state.r1FinalCash = f; document.getElementById('result-title').innerText = "1라운드 결과"; document.getElementById('stats-box').innerHTML = `<p>초기 예수금 : ${initialCash.toLocaleString()}</p><p>현재 예수금 : ${f.toLocaleString()}</p><p>수익률 : ${profit.toFixed(2)}%</p>`; document.getElementById('result-btn').innerText = "2라운드 힌트 보기"; document.getElementById('result-btn').onclick = () => { document.getElementById('game-ui').classList.remove('hidden'); document.getElementById('result-ui').classList.add('hidden'); state.cash = state.r1FinalCash; showHint(1); }; } else { document.getElementById('result-title').innerText = "2라운드 결과"; document.getElementById('stats-box').innerHTML = `<p>초기 예수금 : ${initialCash.toLocaleString()}</p><p>현재 예수금 : ${f.toLocaleString()}</p><p>수익률 : ${profit.toFixed(2)}%</p>`; document.getElementById('result-btn').innerText = "최종 결과 확인"; document.getElementById('result-btn').onclick = () => showFinalResult(f); } }
+        async function showFinalResult(f) {
+            let finalProfit = (f / 500000 * 100 - 100);
+            document.getElementById('result-title').innerText = "최종 결과";
+            document.getElementById('stats-box').innerHTML = `<p>초기 예수금 : 500,000</p><p>최종 금액 : ${f.toLocaleString()}</p><p>최종 수익률 : ${finalProfit.toFixed(2)}%</p>`;
+            const myId = state.myDocId; const profitVal = parseFloat(finalProfit.toFixed(2));
+            await ghMutate(data => { const p = data.participants.find(x => x.id === myId); if (p) p.profit = profitVal; }, `update profit ${myId}`);
+            document.getElementById('result-btn').innerText = "순위 보기";
+            document.getElementById('result-btn').onclick = showRankings;
+        }
+        async function showRankings() {
+            const { data } = await ghReadData();
+            let list = data.participants.filter(p => p.group === state.group).map(p => ({ name: p.nickname, profit: p.profit || 0 }));
+            list.sort((a, b) => b.profit - a.profit);
+            const me = list.find(x => x.name === state.nick);
+            let h = `<div class="mb-4 p-3 bg-purple-100 border-2 border-purple-500 rounded-xl font-bold">나의 닉네임 : ${state.nick}<br>나의 수익률 : ${(me ? me.profit : 0).toFixed(2)}%</div><div class="max-h-60 overflow-y-auto"><table class="w-full text-center text-sm"><thead><tr><th>순위</th><th>닉네임</th><th>수익률</th></tr></thead><tbody>`;
+            list.forEach((item, i) => { const isMe = item.name === state.nick; h += `<tr class="${isMe ? 'bg-purple-200 border-2 border-purple-500 font-bold' : ''}"><td>${i+1}위</td><td>${item.name}</td><td>${item.profit.toFixed(2)}%</td></tr>`; });
+            h += `</tbody></table></div>`;
+            document.getElementById('stats-box').innerHTML = h;
+            document.getElementById('result-btn').innerText = "종료 (새로고침)";
+            document.getElementById('result-btn').onclick = () => location.reload();
+        }
+
+        renderGroups();
+        setInterval(renderGroups, 8000); // GitHub에는 실시간 구독이 없어 폴링으로 갱신합니다.
+    </script>
+</body>
+</html>
