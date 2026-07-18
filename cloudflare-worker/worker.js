@@ -108,13 +108,15 @@ async function syncLeaderboard(data, env) {
     }
 }
 // 동시 편집 충돌(409) 시 최신본을 다시 읽어 재시도합니다.
-async function mutate(mutator, message, env) {
+// 리더보드 갱신은 응답 속도에 영향 없이 ctx.waitUntil로 백그라운드에서 처리합니다.
+async function mutate(mutator, message, env, ctx) {
     for (let i = 0; i < 5; i++) {
         const { sha, data } = await readData(env);
         mutator(data);
         try {
             await ghWriteFile(DATA_PATH, JSON.stringify(data, null, 2), sha, message, env);
-            await syncLeaderboard(data, env);
+            const leaderboardSync = syncLeaderboard(data, env);
+            if (ctx) ctx.waitUntil(leaderboardSync); else await leaderboardSync;
             return data;
         } catch (e) {
             if (e.conflict) { await new Promise(r => setTimeout(r, 300 + Math.random() * 400)); continue; }
@@ -128,7 +130,7 @@ function uid() {
 }
 
 export default {
-    async fetch(request, env) {
+    async fetch(request, env, ctx) {
         if (request.method === 'OPTIONS') return new Response(null, { headers: corsHeaders() });
         const { pathname } = new URL(request.url);
         let body = {};
@@ -142,13 +144,13 @@ export default {
             if (pathname === '/create-group') {
                 if (body.adminPassword !== ADMIN_PASSWORD) return jsonResponse({ error: 'unauthorized' }, 401);
                 if (!body.name) return jsonResponse({ error: 'name required' }, 400);
-                const data = await mutate(d => { d.groups.push({ id: uid(), name: body.name }); }, `create group ${body.name}`, env);
+                const data = await mutate(d => { d.groups.push({ id: uid(), name: body.name }); }, `create group ${body.name}`, env, ctx);
                 return jsonResponse(data);
             }
             if (pathname === '/rename-group') {
                 if (body.adminPassword !== ADMIN_PASSWORD) return jsonResponse({ error: 'unauthorized' }, 401);
                 if (!body.id || !body.name) return jsonResponse({ error: 'id/name required' }, 400);
-                const data = await mutate(d => { const g = d.groups.find(x => x.id === body.id); if (g) g.name = body.name; }, `rename group ${body.id}`, env);
+                const data = await mutate(d => { const g = d.groups.find(x => x.id === body.id); if (g) g.name = body.name; }, `rename group ${body.id}`, env, ctx);
                 return jsonResponse(data);
             }
             if (pathname === '/delete-group') {
@@ -158,31 +160,38 @@ export default {
                     const g = d.groups.find(x => x.id === body.id);
                     d.groups = d.groups.filter(x => x.id !== body.id);
                     if (g) d.participants = d.participants.filter(p => p.group !== g.name);
-                }, `delete group ${body.id}`, env);
+                }, `delete group ${body.id}`, env, ctx);
                 return jsonResponse(data);
             }
             if (pathname === '/add-participant') {
                 if (!body.nickname || !body.group) return jsonResponse({ error: 'nickname/group required' }, 400);
-                const { data: current } = await readData(env);
-                const exists = current.participants.some(p => p.group === body.group && p.nickname === body.nickname);
-                if (exists) return jsonResponse({ error: 'duplicate' }, 409);
                 const id = uid();
-                await mutate(d => { d.participants.push({ id, nickname: body.nickname, group: body.group, profit: 0 }); }, `add participant ${body.nickname}`, env);
+                try {
+                    await mutate(d => {
+                        if (d.participants.some(p => p.group === body.group && p.nickname === body.nickname)) {
+                            throw Object.assign(new Error('duplicate'), { duplicate: true });
+                        }
+                        d.participants.push({ id, nickname: body.nickname, group: body.group, profit: 0 });
+                    }, `add participant ${body.nickname}`, env, ctx);
+                } catch (e) {
+                    if (e.duplicate) return jsonResponse({ error: 'duplicate' }, 409);
+                    throw e;
+                }
                 return jsonResponse({ id });
             }
             if (pathname === '/remove-participant') {
                 if (!body.id) return jsonResponse({ error: 'id required' }, 400);
-                const data = await mutate(d => { d.participants = d.participants.filter(p => p.id !== body.id); }, `remove participant ${body.id}`, env);
+                const data = await mutate(d => { d.participants = d.participants.filter(p => p.id !== body.id); }, `remove participant ${body.id}`, env, ctx);
                 return jsonResponse(data);
             }
             if (pathname === '/update-profit') {
                 if (!body.id) return jsonResponse({ error: 'id required' }, 400);
-                const data = await mutate(d => { const p = d.participants.find(x => x.id === body.id); if (p) p.profit = body.profit; }, `update profit ${body.id}`, env);
+                const data = await mutate(d => { const p = d.participants.find(x => x.id === body.id); if (p) p.profit = body.profit; }, `update profit ${body.id}`, env, ctx);
                 return jsonResponse(data);
             }
             if (pathname === '/reset') {
                 if (body.adminPassword !== ADMIN_PASSWORD) return jsonResponse({ error: 'unauthorized' }, 401);
-                const data = await mutate(d => { d.participants = []; }, 'reset participants', env);
+                const data = await mutate(d => { d.participants = []; }, 'reset participants', env, ctx);
                 return jsonResponse(data);
             }
             return jsonResponse({ error: 'not found' }, 404);

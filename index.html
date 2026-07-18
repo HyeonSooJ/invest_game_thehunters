@@ -133,6 +133,7 @@
                     state.myDocId = r.id; state.isConfirmed = true;
                     document.getElementById('main-btn').innerText = "대회 시작하기";
                     document.getElementById('main-btn').classList.add('bg-emerald-600');
+                    renderGroups();
                 } catch (e) {
                     if (e.message === 'duplicate') return alert("이미 존재하는 닉네임입니다.");
                     return alert("참가 등록 실패: " + e.message);
