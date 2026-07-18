@@ -69,7 +69,7 @@
          * "소스 보기"를 해도 아무 비밀 값도 보이지 않습니다.
          * Worker 배포 방법은 cloudflare-worker/worker.js 파일 상단 주석을 참고하세요.
          * ==================================================================== */
-        const WORKER_URL = 'https://YOUR-WORKER-SUBDOMAIN.workers.dev'; // TODO: 배포한 Cloudflare Worker 주소로 교체
+        const WORKER_URL = 'https://investgame-thehunters.bookfly206.workers.dev';
 
         async function callWorker(path, body) {
             const res = await fetch(`${WORKER_URL}${path}`, {
