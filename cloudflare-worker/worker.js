@@ -151,6 +151,16 @@ export default {
                 const data = await mutate(d => { const g = d.groups.find(x => x.id === body.id); if (g) g.name = body.name; }, `rename group ${body.id}`, env);
                 return jsonResponse(data);
             }
+            if (pathname === '/delete-group') {
+                if (body.adminPassword !== ADMIN_PASSWORD) return jsonResponse({ error: 'unauthorized' }, 401);
+                if (!body.id) return jsonResponse({ error: 'id required' }, 400);
+                const data = await mutate(d => {
+                    const g = d.groups.find(x => x.id === body.id);
+                    d.groups = d.groups.filter(x => x.id !== body.id);
+                    if (g) d.participants = d.participants.filter(p => p.group !== g.name);
+                }, `delete group ${body.id}`, env);
+                return jsonResponse(data);
+            }
             if (pathname === '/add-participant') {
                 if (!body.nickname || !body.group) return jsonResponse({ error: 'nickname/group required' }, 400);
                 const { data: current } = await readData(env);
