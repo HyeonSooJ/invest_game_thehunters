@@ -48,6 +48,7 @@
             </div>
             <div id="trade-input-area" class="mb-6 flex gap-2">
                 <input type="number" id="qty-input" min="0" class="flex-grow p-4 border rounded-xl text-center text-lg font-bold" placeholder="수량 입력 후 사기/팔기 버튼 클릭">
+                <button onclick="setMaxQty()" class="bg-slate-200 text-slate-700 px-4 rounded-xl font-bold text-sm">가능</button>
                 <button onclick="trade('buy')" class="bg-red-500 text-white px-8 rounded-xl font-bold text-lg">사기</button>
                 <button onclick="trade('sell')" class="bg-blue-500 text-white px-8 rounded-xl font-bold text-lg">팔기</button>
             </div>
@@ -180,6 +181,7 @@
 
         function initChart() { const ctx = document.getElementById('stockChart').getContext('2d'); if(window.myChart) myChart.destroy(); myChart = new Chart(ctx, { type: 'line', data: { labels: [], datasets: [{ label: '가격', data: [], borderColor: '#3b82f6', datalabels: { anchor: 'end', align: 'top', formatter: (v) => v.toLocaleString() } }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { datalabels: { display: true } } } }); }
         function updateGameUI() { const isC = state.currentQ === 4; document.getElementById('round-title').innerText = `${state.currentRound + 1}라운드 - ${rounds[state.currentRound].stock}(${isC ? '종가' : (state.currentQ + 1) + '분기'})`; document.getElementById('price-display').innerText = `현재가 : ${rounds[state.currentRound].prices[state.currentQ].toLocaleString()}원`; document.getElementById('cash-display').innerText = state.cash.toLocaleString(); document.getElementById('stock-display').innerText = state.stockQty; document.getElementById('trade-input-area').style.display = isC ? 'none' : 'flex'; myChart.data.labels = labels.slice(0, state.currentQ + 1); myChart.data.datasets[0].data = rounds[state.currentRound].prices.slice(0, state.currentQ + 1); myChart.update(); }
+        function setMaxQty() { const p = rounds[state.currentRound].prices[state.currentQ]; document.getElementById('qty-input').value = Math.floor(state.cash / p); }
         function trade(t) { const q = parseInt(document.getElementById('qty-input').value); if(isNaN(q) || q <= 0) return alert("1 이상의 수량을 입력하세요"); if(!confirm(`${q}주를 ${t === 'buy' ? '사시겠습니까?' : '파시겠습니까?'}`)) return; if(q > 0) state.hasTraded = true; const p = rounds[state.currentRound].prices[state.currentQ]; if(t === 'buy') { if(state.cash < q * p) return alert("예수금 부족"); state.cash -= q * p; state.stockQty += q; } else { if(state.stockQty < q) return alert("보유 주식 부족"); state.cash += q * p; state.stockQty -= q; } updateGameUI(); }
         function nextQuarter() {
             if (state.currentRound === 1 && state.currentQ === 3 && !state.hasTraded) return alert("대회 중 매수/매도 1번은 해야 합니다!");
