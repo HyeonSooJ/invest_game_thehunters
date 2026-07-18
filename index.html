@@ -83,7 +83,20 @@
             if (!res.ok) throw new Error(result.error || `요청 실패 (${res.status})`);
             return result;
         }
-        function fetchState() { return callWorker('/state', {}); }
+        let latestState = { groups: [], participants: [] };
+        async function fetchState() { latestState = await callWorker('/state', {}); return latestState; }
+        function isDuplicateNickname(group, nickname) {
+            return latestState.participants.some(p => p.group === group && p.nickname === nickname);
+        }
+        function offerNicknameEdit() {
+            if (confirm("중복되는 닉네임은 사용할 수 없습니다. 수정하시겠습니까?")) {
+                document.getElementById('nickname').disabled = false;
+                document.getElementById('nickname').focus();
+                document.getElementById('nickname').select();
+                document.getElementById('nick-btn').style.display = '';
+                document.getElementById('status-msg').innerText = '';
+            }
+        }
 
         Chart.register(ChartDataLabels);
 
@@ -107,10 +120,18 @@
             const list = document.getElementById('group-list'); list.innerHTML = '';
             groups.forEach(g => {
                 if (!g.name.toLowerCase().includes(k)) return;
-                const div = document.createElement('div'); div.className = `p-3 border rounded cursor-pointer flex justify-between ${state.group === g.name ? 'bg-blue-50 border-blue-500' : ''}`;
-                div.innerHTML = `<span ondblclick="updateGroupName('${g.id}', '${g.name}')">${g.name}</span> <span class="font-bold text-blue-600">${cnt[g.name] || 0}명</span>`;
+                const div = document.createElement('div'); div.className = `p-3 border rounded cursor-pointer flex justify-between ${state.group === g.name ? 'bg-blue-50 border-blue-500' : ''}`; div.dataset.groupName = g.name;
+                div.innerHTML = `<span ondblclick="updateGroupName('${g.id}', '${g.name}')">${g.name}</span> <span class="font-bold text-blue-600 group-count">${cnt[g.name] || 0}명</span>`;
                 div.onclick = () => selectGroup(g.name); list.appendChild(div);
             });
+        }
+        function bumpGroupCount(groupName, delta) {
+            const row = document.querySelector(`#group-list > div[data-group-name="${CSS.escape(groupName)}"]`);
+            if (!row) return;
+            const span = row.querySelector('.group-count');
+            if (!span) return;
+            const current = parseInt(span.textContent) || 0;
+            span.textContent = `${Math.max(0, current + delta)}명`;
         }
         async function selectGroup(n) {
             if (state.group === n) return;
@@ -128,14 +149,18 @@
         async function handleMainButton() {
             if(!state.isConfirmed) {
                 if(!state.nick) return alert("닉네임 필수!");
+                if (isDuplicateNickname(state.group, state.nick)) return offerNicknameEdit();
+                bumpGroupCount(state.group, 1); // 응답 기다리지 않고 바로 반영 (실패 시 renderGroups로 복구됨)
+                document.getElementById('main-btn').innerText = "대회 시작하기";
+                document.getElementById('main-btn').classList.add('bg-emerald-600');
                 try {
                     const r = await callWorker('/add-participant', { nickname: state.nick, group: state.group });
                     state.myDocId = r.id; state.isConfirmed = true;
-                    document.getElementById('main-btn').innerText = "대회 시작하기";
-                    document.getElementById('main-btn').classList.add('bg-emerald-600');
-                    renderGroups();
                 } catch (e) {
-                    if (e.message === 'duplicate') return alert("이미 존재하는 닉네임입니다.");
+                    document.getElementById('main-btn').innerText = "참가 확정";
+                    document.getElementById('main-btn').classList.remove('bg-emerald-600');
+                    renderGroups();
+                    if (e.message === 'duplicate') return offerNicknameEdit();
                     return alert("참가 등록 실패: " + e.message);
                 }
             } else {
