@@ -24,7 +24,7 @@
             <button onclick="handleMainButton()" id="main-btn" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold hidden">참가 확정</button>
             <div class="grid grid-cols-3 gap-2 mt-2">
                 <button onclick="adminAction('create')" class="text-xs bg-slate-100 py-2 rounded-lg text-slate-600">그룹 생성</button>
-                <button onclick="adminAction('deleteParticipant')" class="text-xs bg-orange-100 py-2 rounded-lg text-orange-600">참가자 삭제</button>
+                <button onclick="openRecordLookup()" class="text-xs bg-orange-100 py-2 rounded-lg text-orange-600">기록 조회</button>
                 <button onclick="adminAction('reset')" class="text-xs bg-red-100 py-2 rounded-lg text-red-600">데이터 초기화</button>
             </div>
         </div>
@@ -201,6 +201,60 @@
             try {
                 await callWorker('/rename-group', { id, name: n, adminPassword: pw });
                 renderGroups();
+            } catch (e) {
+                alert(e.message === 'unauthorized' ? '비밀번호가 틀렸습니다.' : e.message);
+            }
+        }
+
+        function escAttr(s) { return String(s).replace(/'/g, "\\'"); }
+        function closeRecordModal() { document.getElementById('modal-container').classList.add('hidden'); }
+        async function openRecordLookup() {
+            const pw = prompt("관리자 비밀번호:");
+            if (pw === null) return;
+            await backToRecordGroupList(pw);
+        }
+        async function backToRecordGroupList(pw) {
+            let data;
+            try { data = await fetchState(); } catch (e) { return alert('데이터를 불러오지 못했습니다: ' + e.message); }
+            const groups = [...data.groups].sort((a, b) => a.name.localeCompare(b.name));
+            let html = `<h2 class="text-xl font-bold mb-4">그룹 선택</h2>`;
+            if (groups.length === 0) {
+                html += `<p class="text-sm text-gray-500">생성된 그룹이 없습니다.</p>`;
+            } else {
+                html += `<div class="max-h-72 overflow-y-auto space-y-2">`;
+                groups.forEach(g => {
+                    html += `<div class="p-3 border rounded cursor-pointer hover:bg-slate-50" onclick="openRecordTable('${escAttr(pw)}', '${escAttr(g.name)}')">${g.name}</div>`;
+                });
+                html += `</div>`;
+            }
+            html += `<button onclick="closeRecordModal()" class="w-full mt-6 bg-slate-200 text-slate-700 py-3 rounded-xl font-bold">닫기</button>`;
+            document.getElementById('modal-container').classList.remove('hidden');
+            document.getElementById('modal-content').innerHTML = html;
+        }
+        async function openRecordTable(pw, groupName) {
+            let data;
+            try { data = await fetchState(); } catch (e) { return alert('데이터를 불러오지 못했습니다: ' + e.message); }
+            const list = data.participants.filter(p => p.group === groupName).sort((a, b) => (b.profit || 0) - (a.profit || 0));
+            let html = `<h2 class="text-xl font-bold mb-1">${groupName}</h2><p class="text-xs text-gray-400 mb-4">닉네임을 클릭하면 삭제할 수 있습니다.</p>`;
+            if (list.length === 0) {
+                html += `<p class="text-sm text-gray-500">참가자가 없습니다.</p>`;
+            } else {
+                html += `<div class="max-h-72 overflow-y-auto"><table class="w-full text-center text-sm"><thead><tr><th>순위</th><th>닉네임</th><th>수익률</th></tr></thead><tbody>`;
+                list.forEach((p, i) => {
+                    html += `<tr class="cursor-pointer hover:bg-red-50" onclick="confirmDeleteParticipant('${escAttr(pw)}', '${escAttr(groupName)}', '${escAttr(p.nickname)}')"><td>${i + 1}</td><td>${p.nickname}</td><td>${(p.profit || 0).toFixed(2)}%</td></tr>`;
+                });
+                html += `</tbody></table></div>`;
+            }
+            html += `<div class="flex gap-2 mt-6"><button onclick="backToRecordGroupList('${escAttr(pw)}')" class="flex-1 bg-slate-100 text-slate-600 py-3 rounded-xl font-bold">그룹 목록</button><button onclick="closeRecordModal()" class="flex-1 bg-slate-200 text-slate-700 py-3 rounded-xl font-bold">닫기</button></div>`;
+            document.getElementById('modal-container').classList.remove('hidden');
+            document.getElementById('modal-content').innerHTML = html;
+        }
+        async function confirmDeleteParticipant(pw, groupName, nickname) {
+            if (!confirm(`"${nickname}" 님을 삭제하시겠습니까?`)) return;
+            try {
+                await callWorker('/delete-participant', { group: groupName, nickname, adminPassword: pw });
+                renderGroups();
+                openRecordTable(pw, groupName);
             } catch (e) {
                 alert(e.message === 'unauthorized' ? '비밀번호가 틀렸습니다.' : e.message);
             }

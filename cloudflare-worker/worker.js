@@ -184,6 +184,14 @@ export default {
                 const data = await mutate(d => { d.participants = d.participants.filter(p => p.id !== body.id); }, `remove participant ${body.id}`, env, ctx);
                 return jsonResponse(data);
             }
+            if (pathname === '/delete-participant') {
+                if (body.adminPassword !== ADMIN_PASSWORD) return jsonResponse({ error: 'unauthorized' }, 401);
+                if (!body.group || !body.nickname) return jsonResponse({ error: 'group/nickname required' }, 400);
+                const data = await mutate(d => {
+                    d.participants = d.participants.filter(p => !(p.group === body.group && p.nickname === body.nickname));
+                }, `delete participant ${body.nickname}`, env, ctx);
+                return jsonResponse(data);
+            }
             if (pathname === '/update-profit') {
                 if (!body.id) return jsonResponse({ error: 'id required' }, 400);
                 const data = await mutate(d => { const p = d.participants.find(x => x.id === body.id); if (p) p.profit = body.profit; }, `update profit ${body.id}`, env, ctx);
