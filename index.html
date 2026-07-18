@@ -22,8 +22,9 @@
             </div>
             <div id="group-list" class="h-40 overflow-y-auto border rounded-xl p-2 space-y-2 text-sm mb-4"></div>
             <button onclick="handleMainButton()" id="main-btn" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold hidden">참가 확정</button>
-            <div class="grid grid-cols-2 gap-2 mt-2">
+            <div class="grid grid-cols-3 gap-2 mt-2">
                 <button onclick="adminAction('create')" class="text-xs bg-slate-100 py-2 rounded-lg text-slate-600">그룹 생성</button>
+                <button onclick="adminAction('deleteParticipant')" class="text-xs bg-orange-100 py-2 rounded-lg text-orange-600">참가자 삭제</button>
                 <button onclick="adminAction('reset')" class="text-xs bg-red-100 py-2 rounded-lg text-red-600">데이터 초기화</button>
             </div>
         </div>
@@ -70,7 +71,7 @@
          * "소스 보기"를 해도 아무 비밀 값도 보이지 않습니다.
          * Worker 배포 방법은 cloudflare-worker/worker.js 파일 상단 주석을 참고하세요.
          * ==================================================================== */
-        const WORKER_URL = 'https://investgame-thehunters.bookfly206.workers.dev';
+        const WORKER_URL = 'https://invest-game.thehunters.workers.dev';
 
         async function callWorker(path, body) {
             const res = await fetch(`${WORKER_URL}${path}`, {
