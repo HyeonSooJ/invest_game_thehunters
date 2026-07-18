@@ -9,30 +9,5 @@
       "name": "얍"
     }
   ],
-  "participants": [
-    {
-      "id": "bf411087-728b-4de9-9bc2-712d296ab4eb",
-      "nickname": "정현수",
-      "group": "얍",
-      "profit": 0.14
-    },
-    {
-      "id": "9520dc36-184f-4bae-b405-67b8f76e3865",
-      "nickname": "고고링",
-      "group": "49기 환영합니다 !",
-      "profit": 0
-    },
-    {
-      "id": "a3abca5e-3a5b-4503-8386-e8b973ebaa35",
-      "nickname": "얍",
-      "group": "얍",
-      "profit": -0.62
-    },
-    {
-      "id": "f81c6111-29c9-46db-befc-64b75e75f078",
-      "nickname": "수수",
-      "group": "얍",
-      "profit": 0
-    }
-  ]
+  "participants": []
 }
