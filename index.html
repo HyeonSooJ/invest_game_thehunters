@@ -185,9 +185,11 @@
             }
         }
         async function updateGroupName(id, old) {
-            const pw = prompt("관리자 비밀번호:");
-            if (pw === null) return;
-            if (confirm(`"${old}" 그룹을 삭제하시겠습니까?\n(취소를 누르면 그룹 이름을 수정합니다)`)) {
+            const n = prompt("새 그룹명:", old);
+            if (n === null) return;
+            if (confirm(`"${old}" 그룹을 삭제하시겠습니까?`)) {
+                const pw = prompt("관리자 비밀번호:");
+                if (pw === null) return;
                 try {
                     await callWorker('/delete-group', { id, adminPassword: pw });
                     renderGroups();
@@ -196,8 +198,9 @@
                 }
                 return;
             }
-            const n = prompt("새 그룹명:", old);
             if (!n) return;
+            const pw = prompt("관리자 비밀번호:");
+            if (pw === null) return;
             try {
                 await callWorker('/rename-group', { id, name: n, adminPassword: pw });
                 renderGroups();
