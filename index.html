@@ -17,7 +17,7 @@
                 <input type="text" id="nickname" placeholder="닉네임 입력" class="px-4 py-3 border rounded-xl">
                 <button onclick="handleNickname()" id="nick-btn" class="bg-slate-800 text-white py-3 rounded-xl font-bold">확인</button>
                 <div id="status-msg" class="text-sm font-bold text-blue-600 text-center h-5"></div>
-                <input type="text" id="search-group" oninput="renderGroups()" placeholder="그룹 검색..." class="px-4 py-2 border rounded-xl text-sm">
+                <input type="text" id="search-group" oninput="renderGroupList()" placeholder="그룹 검색..." class="px-4 py-2 border rounded-xl text-sm">
                 <div id="state-display" class="text-xs text-gray-500 text-center font-bold">닉네임 - 그룹 미선택</div>
             </div>
             <div id="group-list" class="h-40 overflow-y-auto border rounded-xl p-2 space-y-2 text-sm mb-4"></div>
@@ -111,12 +111,14 @@
         function showHint(idx) { if(idx === 1) { state.stockQty = 0; } openModal(hints[idx], () => { document.getElementById('screen-main').style.display = 'none'; document.getElementById('screen-game').style.display = 'flex'; state.currentRound = idx; state.currentQ = 0; initChart(); updateGameUI(); }); }
 
         async function renderGroups() {
+            try { await fetchState(); } catch (e) { console.error(e); return; }
+            renderGroupList();
+        }
+        function renderGroupList() {
             const k = document.getElementById('search-group').value.toLowerCase();
-            let data;
-            try { data = await fetchState(); } catch (e) { console.error(e); return; }
-            const groups = [...data.groups].sort((a, b) => a.name.localeCompare(b.name));
+            const groups = [...latestState.groups].sort((a, b) => a.name.localeCompare(b.name));
             const cnt = {};
-            data.participants.forEach(p => { cnt[p.group] = (cnt[p.group] || 0) + 1; });
+            latestState.participants.forEach(p => { cnt[p.group] = (cnt[p.group] || 0) + 1; });
             const list = document.getElementById('group-list'); list.innerHTML = '';
             groups.forEach(g => {
                 if (!g.name.toLowerCase().includes(k)) return;
