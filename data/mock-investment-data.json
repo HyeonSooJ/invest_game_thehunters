@@ -5,5 +5,12 @@
       "name": "49기 환영합니다 !"
     }
   ],
-  "participants": []
+  "participants": [
+    {
+      "id": "dbe0cd32-7ca2-43b7-bcf5-62f6f0ecaeb3",
+      "nickname": "정현수",
+      "group": "49기 환영합니다 !",
+      "profit": 0
+    }
+  ]
 }
