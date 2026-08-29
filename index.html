@@ -48,7 +48,7 @@
                 <div><p class="text-sm text-slate-500">보유 주식</p><p id="stock-display" class="text-2xl font-black text-emerald-600">0</p></div>
             </div>
             <div id="trade-input-area" class="mb-6 flex gap-2">
-                <input type="number" id="qty-input" min="0" class="flex-grow p-4 border rounded-xl text-center text-lg font-bold" placeholder="수량 입력 후 사기/팔기 버튼 클릭">
+                <input type="number" id="qty-input" min="0" class="flex-grow p-4 border rounded-xl text-center text-lg font-bold" placeholder="수량 입력 후 사기/팔기 버튼">
                 <button onclick="setMaxQty()" class="bg-slate-200 text-slate-700 px-4 rounded-xl font-bold text-sm">가능</button>
                 <button onclick="trade('buy')" class="bg-red-500 text-white px-8 rounded-xl font-bold text-lg">사기</button>
                 <button onclick="trade('sell')" class="bg-blue-500 text-white px-8 rounded-xl font-bold text-lg">팔기</button>
@@ -276,7 +276,7 @@
 
             const qtyInput = document.getElementById('qty-input');
             qtyInput.value = '';
-            qtyInput.placeholder = '수량 입력 후 사기/팔기 버튼 클릭';
+            qtyInput.placeholder = '수량 입력 후 사기/팔기 버튼';
         }
         function showResult(isF, f) { document.getElementById('game-ui').classList.add('hidden'); document.getElementById('result-ui').classList.remove('hidden'); let initialCash = !isF ? 500000 : state.r1FinalCash; let profit = (f / initialCash * 100 - 100); if (!isF) { state.r1FinalCash = f; document.getElementById('result-title').innerText = "1라운드 결과"; document.getElementById('stats-box').innerHTML = `<p>초기 예수금 : ${initialCash.toLocaleString()}</p><p>현재 예수금 : ${f.toLocaleString()}</p><p>수익률 : ${profit.toFixed(2)}%</p>`; document.getElementById('result-btn').innerText = "2라운드 힌트 보기"; document.getElementById('result-btn').onclick = () => { document.getElementById('game-ui').classList.remove('hidden'); document.getElementById('result-ui').classList.add('hidden'); state.cash = state.r1FinalCash; showHint(1); }; } else { document.getElementById('result-title').innerText = "2라운드 결과"; document.getElementById('stats-box').innerHTML = `<p>초기 예수금 : ${initialCash.toLocaleString()}</p><p>현재 예수금 : ${f.toLocaleString()}</p><p>수익률 : ${profit.toFixed(2)}%</p>`; document.getElementById('result-btn').innerText = "최종 결과 확인"; document.getElementById('result-btn').onclick = () => showFinalResult(f); } }
         async function showFinalResult(f) {
