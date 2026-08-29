@@ -101,9 +101,9 @@
 
         Chart.register(ChartDataLabels);
 
-        let state = { nick: "", group: "", isConfirmed: false, myDocId: null, currentRound: 0, currentQ: 0, cash: INITIAL_CASH, stockQty: 0, r1FinalCash: INITIAL_CASH, hasTraded: false };
         const FX_RATE = 1000; // SanDisk(달러) 가격을 원화로 표시할 때 쓰는 고정 환율
         const INITIAL_CASH = 1000000;
+        let state = { nick: "", group: "", isConfirmed: false, myDocId: null, currentRound: 0, currentQ: 0, cash: INITIAL_CASH, stockQty: 0, r1FinalCash: INITIAL_CASH, hasTraded: false };
         const rounds = [{ name: "1라운드", stock: "넥슨게임즈", prices: [13200, 13400, 12500, 11600, 10500] }, { name: "2라운드", stock: "SanDisk", prices: [40, 50, 210, 610, 1700].map(usd => usd * FX_RATE) }];
         const labels = ['2025년 06월', '2025년 09월', '2025년 12월', '2026년 03월', '종가'];
         const hints = [`<h2 class="text-xl font-bold mb-4">1라운드(넥슨게임즈)</h2><div class="text-sm space-y-3 text-left"><p>🟢 <b>블루 아카이브 일본 5주년 업데이트</b><br>일본 서비스 5주년을 맞은 대규모 업데이트 효과로 일본 앱스토어 매출 1위에 오르며 매출을 견인했습니다.</p><p>🟢 <b>서든어택 견조한 실적</b><br>서든어택의 안정적인 성과에 힘입어 전분기 대비 매출이 늘고 영업손실·순손실 폭도 줄었습니다.</p><p>🔴 <b>신작 공백과 비용 부담</b><br>올해 이렇다 할 신작 출시가 없는 가운데 개발비 지출이 이어지며 매출 감소와 적자 지속 우려가 나옵니다.</p><p>🔴 <b>전작 매출 모멘텀 둔화</b><br>2024년 출시작 '퍼스트 디센던트'가 이끌던 PC온라인 매출 규모를 작년만큼 유지하지 못하고 있습니다.</p></div><p class="text-xs text-gray-400 mt-4">* 2025년 1월~2025년 6월까지 정보입니다. 참고만 하시길 바랍니다.</p>`, `<h2 class="text-xl font-bold mb-4">2라운드(SanDisk)</h2><div class="text-sm space-y-3 text-left"><p>🟢 <b>웨스턴디지털에서 분사</b><br>2025년 2월 웨스턴디지털에서 독립 낸드플래시 전문기업으로 분사(스핀오프)하며 새 출발을 알렸습니다.</p><p>🟢 <b>AI發 메모리 수요 기대감</b><br>생성형 AI 인프라 투자 확대로 낸드플래시 공급 부족 우려가 커지며 관련주에 대한 기대감이 높아지고 있습니다.</p><p>🔴 <b>독자 생존 불확실성</b><br>스핀오프 직후라 독자적인 사업 운영 능력이 검증되지 않았고, 낸드 업황 특유의 높은 경기 순환성 리스크도 있습니다.</p><p>🔴 <b>중국발 경쟁 심화</b><br>중국 YMTC 등 후발주자들이 저가 물량 공세를 확대하고 있어 향후 가격 경쟁이 치열해질 수 있습니다.</p></div><p class="text-xs text-gray-400 mt-4">* 2025년 1월~2025년 6월까지 정보입니다. 참고만 하시길 바랍니다.</p>`];
