@@ -38,9 +38,10 @@
         <div id="game-ui" class="max-w-2xl w-full bg-white p-10 rounded-3xl shadow-2xl">
             <div class="flex justify-between items-center mb-6">
                 <h2 id="round-title" class="text-2xl font-black"></h2>
-                <span class="bg-slate-800 text-white text-[10px] px-3 py-1 rounded-full">기간: 2024.06~2026.06</span>
+                <span class="bg-slate-800 text-white text-[10px] px-3 py-1 rounded-full">기간: 2025.06~2026.06</span>
             </div>
-            <p id="price-display" class="text-lg font-bold text-slate-700 mb-4"></p>
+            <p id="price-display" class="text-lg font-bold text-slate-700 mb-1"></p>
+            <p id="fx-note" class="hidden text-xs text-slate-400 mb-3">환율 : 1000원으로 조정</p>
             <div id="trade-alert" class="hidden text-red-500 font-bold text-center mb-4 animate-pulse">⚠️ 대회 중 매수/매도 1번은 해야 합니다!</div>
             <div class="w-full h-64 mb-6"><canvas id="stockChart"></canvas></div>
             <div class="bg-slate-100 p-6 rounded-2xl mb-6 flex justify-between items-center">
@@ -101,9 +102,10 @@
         Chart.register(ChartDataLabels);
 
         let state = { nick: "", group: "", isConfirmed: false, myDocId: null, currentRound: 0, currentQ: 0, cash: 500000, stockQty: 0, r1FinalCash: 500000, hasTraded: false };
-        const rounds = [{ name: "1라운드", stock: "마녀공장", prices: [27050, 21250, 16370, 16200, 18130] }, { name: "2라운드", stock: "카카오", prices: [43300, 37350, 40550, 43000, 43700] }];
-        const labels = ['2024년 06월', '2024년 09월', '2024년 12월', '2025년 03월', '종가'];
-        const hints = [`<h2 class="text-xl font-bold mb-4">1라운드(마녀공장)</h2><div class="text-sm space-y-3 text-left"><p>🟢 <b>미국·일본 수출 확대</b><br>K-뷰티 수출이 미국과 일본을 중심으로 성장하면서 해외 매출 확대 기대가 높아지고 있습니다.</p><p>🟢 <b>해외 채널 확장</b><br>아마존과 일본 드럭스토어 등 해외 판매 채널 확대를 추진하고 있습니다.</p><p>🔴 <b>높은 성장 기대감</b><br>상장 이후 성장 기대가 높아진 상태로 향후 실적이 기대에 못 미칠 경우 주가 변동성이 확대될 수 있습니다.</p><p>🔴 <b>치열한 경쟁</b><br>K-뷰티 시장에는 다수의 중소·중견 브랜드가 경쟁하고 있어 지속적인 브랜드 경쟁력 확보가 필요합니다.</p></div>`, `<h2 class="text-xl font-bold mb-4">2라운드(카카오)</h2><div class="text-sm space-y-3 text-left"><p>🟢 <b>1분기 영업이익 92% 증가</b><br>2024년 1분기 영업이익이 1,203억 원으로 전년 동기 대비 92% 증가했으며 톡비즈 매출도 8% 성장했습니다.</p><p>🟢 <b>AI 조직 재편</b><br>카카오는 2024년 5월 카카오브레인의 초거대 AI 모델 사업을 흡수하며 AI 서비스 개발 역량을 집중하고 있습니다.</p><p>🔴 <b>플랫폼 규제</b><br>카카오모빌리티와 플랫폼 사업에 대한 규제 논의 및 공정위 조사가 2024년에도 계속되고 있습니다.</p><p>🔴 <b>실적 기대치 부담</b><br>영업이익은 전년 대비 크게 증가했지만 일부 증권사 예상치에는 미치지 못했다는 평가도 나왔습니다.</p></div><p class="text-xs text-gray-400 mt-4">* 2024년 1월~2024년 6월까지 정보입니다. 참고만 하시길 바랍니다.</p>`];
+        const FX_RATE = 1000; // SanDisk(달러) 가격을 원화로 표시할 때 쓰는 고정 환율
+        const rounds = [{ name: "1라운드", stock: "넥슨게임즈", prices: [13200, 13400, 12500, 11600, 10500] }, { name: "2라운드", stock: "SanDisk", prices: [40, 50, 210, 610, 1700].map(usd => usd * FX_RATE) }];
+        const labels = ['2025년 06월', '2025년 09월', '2025년 12월', '2026년 03월', '종가'];
+        const hints = [`<h2 class="text-xl font-bold mb-4">1라운드(넥슨게임즈)</h2><div class="text-sm space-y-3 text-left"><p>🟢 <b>블루 아카이브 일본 5주년 업데이트</b><br>일본 서비스 5주년을 맞은 대규모 업데이트 효과로 일본 앱스토어 매출 1위에 오르며 매출을 견인했습니다.</p><p>🟢 <b>서든어택 견조한 실적</b><br>서든어택의 안정적인 성과에 힘입어 전분기 대비 매출이 늘고 영업손실·순손실 폭도 줄었습니다.</p><p>🔴 <b>신작 공백과 비용 부담</b><br>올해 이렇다 할 신작 출시가 없는 가운데 개발비 지출이 이어지며 매출 감소와 적자 지속 우려가 나옵니다.</p><p>🔴 <b>전작 매출 모멘텀 둔화</b><br>2024년 출시작 '퍼스트 디센던트'가 이끌던 PC온라인 매출 규모를 작년만큼 유지하지 못하고 있습니다.</p></div><p class="text-xs text-gray-400 mt-4">* 2025년 1월~2025년 6월까지 정보입니다. 참고만 하시길 바랍니다.</p>`, `<h2 class="text-xl font-bold mb-4">2라운드(SanDisk)</h2><div class="text-sm space-y-3 text-left"><p>🟢 <b>웨스턴디지털에서 분사</b><br>2025년 2월 웨스턴디지털에서 독립 낸드플래시 전문기업으로 분사(스핀오프)하며 새 출발을 알렸습니다.</p><p>🟢 <b>AI發 메모리 수요 기대감</b><br>생성형 AI 인프라 투자 확대로 낸드플래시 공급 부족 우려가 커지며 관련주에 대한 기대감이 높아지고 있습니다.</p><p>🔴 <b>독자 생존 불확실성</b><br>스핀오프 직후라 독자적인 사업 운영 능력이 검증되지 않았고, 낸드 업황 특유의 높은 경기 순환성 리스크도 있습니다.</p><p>🔴 <b>중국발 경쟁 심화</b><br>중국 YMTC 등 후발주자들이 저가 물량 공세를 확대하고 있어 향후 가격 경쟁이 치열해질 수 있습니다.</p></div><p class="text-xs text-gray-400 mt-4">* 2025년 1월~2025년 6월까지 정보입니다. 참고만 하시길 바랍니다.</p>`];
 
         function handleNickname() { const n = document.getElementById('nickname').value; if(!n) return alert("닉네임 필수!"); state.nick = n; alert("한 번 입력하면 수정이 불가능합니다 ! 수정을 원하시면 새로고침을 눌러주세요 !"); document.getElementById('status-msg').innerText = `${n} 님 화이팅!!`; document.getElementById('nickname').disabled = true; document.getElementById('nick-btn').style.display = 'none'; }
         function openModal(html, callback) { document.getElementById('modal-container').classList.remove('hidden'); document.getElementById('modal-content').innerHTML = html + `<button onclick="closeModal()" class="w-full mt-6 bg-blue-600 text-white py-3 rounded-xl font-bold">확인</button>`; window.nextAction = callback; }
@@ -166,7 +168,7 @@
                     return alert("참가 등록 실패: " + e.message);
                 }
             } else {
-                openModal(`<h2 class="text-xl font-bold mb-4">모의투자대회 설명</h2><div class="text-sm text-left space-y-2"><p>1. 대회는 총 2라운드로 구성되고 각 라운드별 4번의 매수/매도 기회가 있습니다.</p><p>2. 투자기간 : 2024.06~2025.06</p><p>3. 대회 중 매수/매도 1번은 진행해야 합니다.</p><p>4. 재미로 즐겨주시면 감사하겠습니다 !! 화이팅 !!</p></div>`, () => showHint(0));
+                openModal(`<h2 class="text-xl font-bold mb-4">모의투자대회 설명</h2><div class="text-sm text-left space-y-2"><p>1. 대회는 총 2라운드로 구성되고 각 라운드별 4번의 매수/매도 기회가 있습니다.</p><p>2. 투자기간 : 2025.06~2026.06</p><p>3. 대회 중 매수/매도 1번은 진행해야 합니다.</p><p>4. 재미로 즐겨주시면 감사하겠습니다 !! 화이팅 !!</p></div>`, () => showHint(0));
             }
         }
         async function adminAction(t) {
@@ -267,7 +269,7 @@
         }
 
         function initChart() { const ctx = document.getElementById('stockChart').getContext('2d'); if(window.myChart) myChart.destroy(); myChart = new Chart(ctx, { type: 'line', data: { labels: [], datasets: [{ label: '가격', data: [], borderColor: '#3b82f6', datalabels: { anchor: 'end', align: 'top', formatter: (v) => v.toLocaleString() } }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { datalabels: { display: true } } } }); }
-        function updateGameUI() { const isC = state.currentQ === 4; document.getElementById('round-title').innerText = `${state.currentRound + 1}라운드 - ${rounds[state.currentRound].stock}(${isC ? '종가' : (state.currentQ + 1) + '분기'})`; document.getElementById('price-display').innerText = `현재가 : ${rounds[state.currentRound].prices[state.currentQ].toLocaleString()}원`; document.getElementById('cash-display').innerText = state.cash.toLocaleString(); document.getElementById('stock-display').innerText = state.stockQty; document.getElementById('trade-input-area').style.display = isC ? 'none' : 'flex'; myChart.data.labels = labels.slice(0, state.currentQ + 1); myChart.data.datasets[0].data = rounds[state.currentRound].prices.slice(0, state.currentQ + 1); myChart.update(); }
+        function updateGameUI() { const isC = state.currentQ === 4; document.getElementById('round-title').innerText = `${state.currentRound + 1}라운드 - ${rounds[state.currentRound].stock}(${isC ? '종가' : (state.currentQ + 1) + '분기'})`; document.getElementById('price-display').innerText = `현재가 : ${rounds[state.currentRound].prices[state.currentQ].toLocaleString()}원`; document.getElementById('fx-note').classList.toggle('hidden', state.currentRound !== 1); document.getElementById('cash-display').innerText = state.cash.toLocaleString(); document.getElementById('stock-display').innerText = state.stockQty; document.getElementById('trade-input-area').style.display = isC ? 'none' : 'flex'; myChart.data.labels = labels.slice(0, state.currentQ + 1); myChart.data.datasets[0].data = rounds[state.currentRound].prices.slice(0, state.currentQ + 1); myChart.update(); }
         function setMaxQty() { const p = rounds[state.currentRound].prices[state.currentQ]; document.getElementById('qty-input').value = Math.floor(state.cash / p); }
         function trade(t) { const q = parseInt(document.getElementById('qty-input').value); if(isNaN(q) || q <= 0) return alert("1 이상의 수량을 입력하세요"); if(!confirm(`${q}주를 ${t === 'buy' ? '사시겠습니까?' : '파시겠습니까?'}`)) return; if(q > 0) state.hasTraded = true; const p = rounds[state.currentRound].prices[state.currentQ]; if(t === 'buy') { if(state.cash < q * p) return alert("예수금 부족"); state.cash -= q * p; state.stockQty += q; } else { if(state.stockQty < q) return alert("보유 주식 부족"); state.cash += q * p; state.stockQty -= q; } updateGameUI(); }
         function nextQuarter() {
