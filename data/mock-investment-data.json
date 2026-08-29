@@ -5,24 +5,5 @@
       "name": "Yeah~"
     }
   ],
-  "participants": [
-    {
-      "id": "8df5329d-61a0-4a50-99c2-72afb5fd188b",
-      "nickname": "정현수",
-      "group": "Yeah~",
-      "profit": 0
-    },
-    {
-      "id": "7516006a-f6fc-465d-a268-15efed5698ec",
-      "nickname": "현수",
-      "group": "Yeah~",
-      "profit": 0
-    },
-    {
-      "id": "6fd16993-c07f-46c2-88af-e1f0a9afadac",
-      "nickname": "현수현수",
-      "group": "Yeah~",
-      "profit": 0
-    }
-  ]
+  "participants": []
 }
