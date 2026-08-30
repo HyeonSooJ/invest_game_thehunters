@@ -9,6 +9,8 @@
     <style>.screen { display: none; } .active-screen { display: flex; }</style>
 </head>
 <body class="bg-slate-50 min-h-screen font-sans">
+    <audio id="bgm" src="assets/bgm.mp3" loop></audio>
+    <button id="bgm-toggle" onclick="toggleBgm()" class="fixed top-3 right-3 z-50 bg-white shadow-md rounded-full w-10 h-10 flex items-center justify-center text-lg">🔇</button>
 
     <div id="screen-main" class="screen active-screen min-h-screen items-center justify-center p-4">
         <div class="max-w-md w-full bg-white p-8 rounded-3xl shadow-2xl">
@@ -111,7 +113,7 @@
         function handleNickname() { const n = document.getElementById('nickname').value; if(!n) return alert("닉네임 필수!"); if (isNicknameTaken(n)) return offerNicknameEdit(); state.nick = n; alert("한 번 입력하면 수정이 불가능합니다 ! 수정을 원하시면 새로고침을 눌러주세요 !"); document.getElementById('status-msg').innerText = `${n} 님 화이팅!!`; document.getElementById('nickname').disabled = true; document.getElementById('nick-btn').style.display = 'none'; }
         function openModal(html, callback) { document.getElementById('modal-container').classList.remove('hidden'); document.getElementById('modal-content').innerHTML = html + `<button onclick="closeModal()" class="w-full mt-6 bg-blue-600 text-white py-3 rounded-xl font-bold">확인</button>`; window.nextAction = callback; }
         function closeModal() { document.getElementById('modal-container').classList.add('hidden'); if(window.nextAction) window.nextAction(); }
-        function showHint(idx) { if(idx === 1) { state.stockQty = 0; } openModal(hints[idx], () => { document.getElementById('screen-main').style.display = 'none'; document.getElementById('screen-game').style.display = 'flex'; state.currentRound = idx; state.currentQ = 0; initChart(); updateGameUI(); }); }
+        function showHint(idx) { if(idx === 1) { state.stockQty = 0; } openModal(hints[idx], () => { document.getElementById('screen-main').style.display = 'none'; document.getElementById('screen-game').style.display = 'flex'; stopBgm(); state.currentRound = idx; state.currentQ = 0; initChart(); updateGameUI(); }); }
 
         async function renderGroups() {
             try { await fetchState(); } catch (e) { console.error(e); return; }
@@ -306,6 +308,24 @@
 
         renderGroups();
         setInterval(renderGroups, 8000); // 실시간 구독 대신 폴링으로 갱신합니다.
+
+        // 배경음악: 닉네임 입력~그룹 선택 화면(screen-main)에서만 무한 반복 재생하고,
+        // 대회가 시작돼 screen-game으로 넘어가면 멈춥니다. 브라우저 자동재생 정책상
+        // 소리 있는 재생은 보통 막혀 있어서, 우선 시도해보고 막히면 사용자가 화면을
+        // 처음 클릭/터치할 때(단, 음악 버튼 클릭은 제외) 재생을 시작합니다.
+        const bgm = document.getElementById('bgm');
+        const bgmToggle = document.getElementById('bgm-toggle');
+        function setBgmIcon() { bgmToggle.textContent = bgm.paused ? '🔇' : '🔊'; }
+        function tryPlayBgm() { bgm.play().then(setBgmIcon).catch(() => {}); }
+        function toggleBgm() { if (bgm.paused) tryPlayBgm(); else { bgm.pause(); setBgmIcon(); } }
+        function stopBgm() { bgm.pause(); bgm.currentTime = 0; setBgmIcon(); bgmToggle.style.display = 'none'; }
+        tryPlayBgm();
+        ['click', 'touchstart', 'keydown'].forEach(evt => {
+            document.addEventListener(evt, function startOnce(e) {
+                if (e.target && e.target.id !== 'bgm-toggle' && bgm.paused) tryPlayBgm();
+                document.removeEventListener(evt, startOnce);
+            }, { once: true });
+        });
     </script>
 </body>
 </html>
