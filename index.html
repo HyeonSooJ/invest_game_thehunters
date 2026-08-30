@@ -332,10 +332,9 @@
         renderGroups();
         setInterval(renderGroups, 8000); // 실시간 구독 대신 폴링으로 갱신합니다.
 
-        // 배경음악: 닉네임 입력~그룹 선택 화면(screen-main)에서만 무한 반복 재생하고,
-        // 대회가 시작돼 screen-game으로 넘어가면 멈춥니다. 브라우저 자동재생 정책상
-        // 소리 있는 재생은 보통 막혀 있어서, 우선 시도해보고 막히면 사용자가 화면을
-        // 처음 클릭/터치할 때(단, 음악 버튼 클릭은 제외) 재생을 시작합니다.
+        // 배경음악: 닉네임 입력~그룹 선택 화면(screen-main)에서만 재생 가능하고,
+        // 기본은 꺼진 상태로 시작해서 아이콘을 눌러야 재생됩니다(자동재생 없음).
+        // 대회가 시작돼 screen-game으로 넘어가면 멈추고 아이콘도 사라집니다.
         const bgm = document.getElementById('bgm');
         const bgmToggle = document.getElementById('bgm-toggle');
         function setBgmIcon() { bgmToggle.textContent = bgm.paused ? '🔇' : '🔊'; }
@@ -358,13 +357,7 @@
             bgmToggle.style.display = 'none';
             fadeBgmTo(0, 600, () => { bgm.pause(); bgm.currentTime = 0; bgm.volume = 1; });
         }
-        tryPlayBgm();
-        ['click', 'touchstart', 'keydown'].forEach(evt => {
-            document.addEventListener(evt, function startOnce(e) {
-                if (e.target && e.target.id !== 'bgm-toggle' && bgm.paused) tryPlayBgm();
-                document.removeEventListener(evt, startOnce);
-            }, { once: true });
-        });
+        // 처음엔 소리 꺼진 상태로 시작하고, 아이콘을 눌러야만 재생됩니다.
     </script>
 </body>
 </html>
