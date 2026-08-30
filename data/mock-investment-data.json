@@ -1,16 +1,4 @@
 {
-  "groups": [
-    {
-      "id": "4cf353e8-cfb3-4ac1-a340-1804b66e5eb7",
-      "name": "Yeah~"
-    }
-  ],
-  "participants": [
-    {
-      "id": "0939e475-9482-4f19-9972-fad448013c3b",
-      "nickname": "정현수",
-      "group": "Yeah~",
-      "profit": 0
-    }
-  ]
+  "groups": [],
+  "participants": []
 }
