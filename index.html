@@ -155,20 +155,27 @@
         }
         async function handleMainButton() {
             if(!state.isConfirmed) {
+                if (state.joining) return; // 처리 중 중복 클릭 무시
                 if(!state.nick) return alert("닉네임 필수!");
                 if (isDuplicateNickname(state.group, state.nick)) return offerNicknameEdit();
+                state.joining = true;
+                const btn = document.getElementById('main-btn');
+                btn.disabled = true;
                 bumpGroupCount(state.group, 1); // 응답 기다리지 않고 바로 반영 (실패 시 renderGroups로 복구됨)
-                document.getElementById('main-btn').innerText = "대회 시작하기";
-                document.getElementById('main-btn').classList.add('bg-emerald-600');
+                btn.innerText = "대회 시작하기";
+                btn.classList.add('bg-emerald-600');
                 try {
                     const r = await callWorker('/add-participant', { nickname: state.nick, group: state.group });
                     state.myDocId = r.id; state.isConfirmed = true;
                 } catch (e) {
-                    document.getElementById('main-btn').innerText = "참가 확정";
-                    document.getElementById('main-btn').classList.remove('bg-emerald-600');
+                    btn.innerText = "참가 확정";
+                    btn.classList.remove('bg-emerald-600');
                     renderGroups();
                     if (e.message === 'duplicate') return offerNicknameEdit();
                     return alert("참가 등록 실패: " + e.message);
+                } finally {
+                    state.joining = false;
+                    btn.disabled = false;
                 }
             } else {
                 openModal(`<h2 class="text-xl font-bold mb-4">모의투자대회 설명</h2><div class="text-sm text-left space-y-2"><p>1. 대회는 총 2라운드로 구성되고 각 라운드별 4번의 매수/매도 기회가 있습니다.</p><p>2. 투자기간 : 2025.06~2026.06</p><p>3. 대회 중 매수/매도 1번은 진행해야 합니다.</p><p>4. 재미로 즐겨주시면 감사하겠습니다 !! 화이팅 !!</p></div>`, () => showHint(0));
