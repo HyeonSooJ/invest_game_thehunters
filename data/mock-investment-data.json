@@ -1,20 +1,9 @@
 {
   "groups": [
     {
-      "id": "9dfec2f2-ee80-48e8-844b-2f2d8d27e36f",
-      "name": "Yeah~"
-    },
-    {
       "id": "a3c5c607-2b85-45f2-ad0f-16766dad4f7a",
       "name": "아"
     }
   ],
-  "participants": [
-    {
-      "id": "b5faa141-c0b5-4ba7-b92d-f803b439dc85",
-      "nickname": "정현수",
-      "group": "Yeah~",
-      "profit": 4150
-    }
-  ]
+  "participants": []
 }
