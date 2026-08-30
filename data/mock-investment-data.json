@@ -17,5 +17,12 @@
       "name": "예"
     }
   ],
-  "participants": []
+  "participants": [
+    {
+      "id": "abe31435-b972-4a2a-b545-26e03c00029e",
+      "nickname": "정현수",
+      "group": "예",
+      "profit": 0
+    }
+  ]
 }
