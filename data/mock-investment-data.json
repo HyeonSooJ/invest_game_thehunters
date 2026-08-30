@@ -1,4 +1,9 @@
 {
-  "groups": [],
+  "groups": [
+    {
+      "id": "010d9c37-dbd7-4c53-9756-20528807cc0c",
+      "name": "음"
+    }
+  ],
   "participants": []
 }
