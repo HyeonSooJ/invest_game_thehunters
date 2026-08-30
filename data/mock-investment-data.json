@@ -5,5 +5,12 @@
       "name": "Yeah~"
     }
   ],
-  "participants": []
+  "participants": [
+    {
+      "id": "0939e475-9482-4f19-9972-fad448013c3b",
+      "nickname": "정현수",
+      "group": "Yeah~",
+      "profit": 0
+    }
+  ]
 }
