@@ -88,8 +88,8 @@
         }
         let latestState = { groups: [], participants: [] };
         async function fetchState() { latestState = await callWorker('/state', {}); return latestState; }
-        function isNicknameTaken(nickname) {
-            return latestState.participants.some(p => p.nickname === nickname);
+        function isDuplicateNickname(group, nickname) {
+            return latestState.participants.some(p => p.group === group && p.nickname === nickname);
         }
         function offerNicknameEdit() {
             if (confirm("중복된 닉네임입니다. 사용하시려는 닉네임 뒤에 무언가를 붙여주세요!")) {
@@ -110,7 +110,7 @@
         const labels = ['2025년 06월', '2025년 09월', '2025년 12월', '2026년 03월', '종가'];
         const hints = [`<h2 class="text-xl font-bold mb-4">1라운드(넥슨게임즈)</h2><div class="text-sm space-y-3 text-left"><p>🟢 <b>블루 아카이브 일본 5주년 업데이트</b><br>일본 서비스 5주년을 맞은 대규모 업데이트 효과로 일본 앱스토어 매출 1위에 오르며 매출을 견인했습니다.</p><p>🟢 <b>서든어택 견조한 실적</b><br>서든어택의 안정적인 성과에 힘입어 전분기 대비 매출이 늘고 영업손실·순손실 폭도 줄었습니다.</p><p>🔴 <b>신작 공백과 비용 부담</b><br>올해 이렇다 할 신작 출시가 없는 가운데 개발비 지출이 이어지며 매출 감소와 적자 지속 우려가 나옵니다.</p><p>🔴 <b>전작 매출 모멘텀 둔화</b><br>2024년 출시작 '퍼스트 디센던트'가 이끌던 PC온라인 매출 규모를 작년만큼 유지하지 못하고 있습니다.</p></div><p class="text-xs text-gray-400 mt-4">* 2025년 1월~2025년 6월까지 정보입니다. 참고만 하시길 바랍니다.</p>`, `<h2 class="text-xl font-bold mb-4">2라운드(SanDisk)</h2><div class="text-sm space-y-3 text-left"><p>🟢 <b>웨스턴디지털에서 분사</b><br>2025년 2월 웨스턴디지털에서 독립 낸드플래시 전문기업으로 분사(스핀오프)하며 새 출발을 알렸습니다.</p><p>🟢 <b>AI發 메모리 수요 기대감</b><br>생성형 AI 인프라 투자 확대로 낸드플래시 공급 부족 우려가 커지며 관련주에 대한 기대감이 높아지고 있습니다.</p><p>🔴 <b>독자 생존 불확실성</b><br>스핀오프 직후라 독자적인 사업 운영 능력이 검증되지 않았고, 낸드 업황 특유의 높은 경기 순환성 리스크도 있습니다.</p><p>🔴 <b>중국발 경쟁 심화</b><br>중국 YMTC 등 후발주자들이 저가 물량 공세를 확대하고 있어 향후 가격 경쟁이 치열해질 수 있습니다.</p></div><p class="text-xs text-gray-400 mt-4">* 2025년 1월~2025년 6월까지 정보입니다. 참고만 하시길 바랍니다.</p>`];
 
-        function handleNickname() { const n = document.getElementById('nickname').value; if(!n) return alert("닉네임 필수!"); if (isNicknameTaken(n)) return offerNicknameEdit(); state.nick = n; alert("한 번 입력하면 수정이 불가능합니다 ! 수정을 원하시면 새로고침을 눌러주세요 !"); document.getElementById('status-msg').innerText = `${n} 님 화이팅!!`; document.getElementById('nickname').disabled = true; document.getElementById('nick-btn').style.display = 'none'; }
+        function handleNickname() { const n = document.getElementById('nickname').value; if(!n) return alert("닉네임 필수!"); state.nick = n; alert("한 번 입력하면 수정이 불가능합니다 ! 수정을 원하시면 새로고침을 눌러주세요 !"); document.getElementById('status-msg').innerText = `${n} 님 화이팅!!`; document.getElementById('nickname').disabled = true; document.getElementById('nick-btn').style.display = 'none'; }
         function openModal(html, callback) { document.getElementById('modal-container').classList.remove('hidden'); document.getElementById('modal-content').innerHTML = html + `<button onclick="closeModal()" class="w-full mt-6 bg-blue-600 text-white py-3 rounded-xl font-bold">확인</button>`; window.nextAction = callback; }
         function closeModal() { document.getElementById('modal-container').classList.add('hidden'); if(window.nextAction) window.nextAction(); }
         function showHint(idx) { if(idx === 1) { state.stockQty = 0; } openModal(hints[idx], () => { document.getElementById('screen-main').style.display = 'none'; document.getElementById('screen-game').style.display = 'flex'; stopBgm(); state.currentRound = idx; state.currentQ = 0; initChart(); updateGameUI(); }); }
@@ -156,6 +156,7 @@
         async function handleMainButton() {
             if(!state.isConfirmed) {
                 if(!state.nick) return alert("닉네임 필수!");
+                if (isDuplicateNickname(state.group, state.nick)) return offerNicknameEdit();
                 bumpGroupCount(state.group, 1); // 응답 기다리지 않고 바로 반영 (실패 시 renderGroups로 복구됨)
                 document.getElementById('main-btn').innerText = "대회 시작하기";
                 document.getElementById('main-btn').classList.add('bg-emerald-600');
@@ -166,7 +167,8 @@
                     document.getElementById('main-btn').innerText = "참가 확정";
                     document.getElementById('main-btn').classList.remove('bg-emerald-600');
                     renderGroups();
-                    return alert(e.message === 'duplicate' ? '이미 사용 중인 닉네임입니다. 새로고침 후 다시 시도해주세요.' : "참가 등록 실패: " + e.message);
+                    if (e.message === 'duplicate') return offerNicknameEdit();
+                    return alert("참가 등록 실패: " + e.message);
                 }
             } else {
                 openModal(`<h2 class="text-xl font-bold mb-4">모의투자대회 설명</h2><div class="text-sm text-left space-y-2"><p>1. 대회는 총 2라운드로 구성되고 각 라운드별 4번의 매수/매도 기회가 있습니다.</p><p>2. 투자기간 : 2025.06~2026.06</p><p>3. 대회 중 매수/매도 1번은 진행해야 합니다.</p><p>4. 재미로 즐겨주시면 감사하겠습니다 !! 화이팅 !!</p></div>`, () => showHint(0));
