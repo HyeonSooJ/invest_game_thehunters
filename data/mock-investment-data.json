@@ -21,6 +21,12 @@
       "nickname": "정현수1",
       "group": "Yeah",
       "profit": 109
+    },
+    {
+      "id": "8ad866dd-25a3-46b8-8f9e-d68c15a578cd",
+      "nickname": "정현수",
+      "group": "소",
+      "profit": 0
     }
   ]
 }
