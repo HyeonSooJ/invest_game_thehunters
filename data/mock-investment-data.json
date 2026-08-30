@@ -1,27 +1,11 @@
 {
   "groups": [
     {
-      "id": "a9a18022-7b32-4921-91fe-f9865a9c24d8",
-      "name": "Yeah"
-    },
-    {
       "id": "6999d540-5d12-4c10-be04-e97f5b00219b",
       "name": "소"
     }
   ],
   "participants": [
-    {
-      "id": "ec84b275-f3b8-428b-9eb9-c5120abe91a6",
-      "nickname": "정현수",
-      "group": "Yeah",
-      "profit": 0
-    },
-    {
-      "id": "7f1648a4-ea38-4126-b9cc-6c6654f3c7d4",
-      "nickname": "정현수1",
-      "group": "Yeah",
-      "profit": 109
-    },
     {
       "id": "8ad866dd-25a3-46b8-8f9e-d68c15a578cd",
       "nickname": "정현수",
