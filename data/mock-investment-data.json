@@ -9,12 +9,5 @@
       "name": "오"
     }
   ],
-  "participants": [
-    {
-      "id": "6ad1177d-bb48-4163-ba2f-301f8b2deb70",
-      "nickname": "정현수",
-      "group": "오",
-      "profit": 0
-    }
-  ]
+  "participants": []
 }
