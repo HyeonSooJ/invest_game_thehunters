@@ -90,7 +90,7 @@
             return latestState.participants.some(p => p.nickname === nickname);
         }
         function offerNicknameEdit() {
-            if (confirm("중복되는 닉네임은 사용할 수 없습니다. 수정하시겠습니까?")) {
+            if (confirm("중복된 닉네임입니다. 사용하시려는 닉네임 뒤에 무언가를 붙여주세요!")) {
                 document.getElementById('nickname').disabled = false;
                 document.getElementById('nickname').focus();
                 document.getElementById('nickname').select();
