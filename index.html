@@ -119,14 +119,28 @@
             try { await fetchState(); } catch (e) { console.error(e); return; }
             renderGroupList();
         }
+        const CHOSUNG = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+        function getChosung(str) {
+            let result = '';
+            for (const ch of str) {
+                const code = ch.charCodeAt(0) - 0xAC00;
+                result += (code >= 0 && code <= 11171) ? CHOSUNG[Math.floor(code / 588)] : ch;
+            }
+            return result;
+        }
+        function matchesGroupSearch(name, query) {
+            if (!query) return true;
+            if (name.toLowerCase().includes(query.toLowerCase())) return true;
+            return getChosung(name).includes(query); // 자음(초성)만 입력해도 검색되도록
+        }
         function renderGroupList() {
-            const k = document.getElementById('search-group').value.toLowerCase();
-            const groups = [...latestState.groups].sort((a, b) => a.name.localeCompare(b.name));
+            const k = document.getElementById('search-group').value;
+            const groups = [...latestState.groups].sort((a, b) => b.name.localeCompare(a.name));
             const cnt = {};
             latestState.participants.forEach(p => { cnt[p.group] = (cnt[p.group] || 0) + 1; });
             const list = document.getElementById('group-list'); list.innerHTML = '';
             groups.forEach(g => {
-                if (!g.name.toLowerCase().includes(k)) return;
+                if (!matchesGroupSearch(g.name, k)) return;
                 const div = document.createElement('div'); div.className = `p-3 border rounded cursor-pointer flex justify-between ${state.group === g.name ? 'bg-blue-50 border-blue-500' : ''}`; div.dataset.groupName = g.name;
                 div.innerHTML = `<span ondblclick="updateGroupName('${g.id}', '${g.name}')">${g.name}</span> <span class="font-bold text-blue-600 group-count">${cnt[g.name] || 0}명</span>`;
                 div.onclick = () => selectGroup(g.name); list.appendChild(div);
