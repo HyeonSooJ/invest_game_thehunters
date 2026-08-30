@@ -1,16 +1,4 @@
 {
-  "groups": [
-    {
-      "id": "6999d540-5d12-4c10-be04-e97f5b00219b",
-      "name": "소"
-    }
-  ],
-  "participants": [
-    {
-      "id": "8ad866dd-25a3-46b8-8f9e-d68c15a578cd",
-      "nickname": "정현수",
-      "group": "소",
-      "profit": 0
-    }
-  ]
+  "groups": [],
+  "participants": []
 }
