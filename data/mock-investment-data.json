@@ -7,18 +7,7 @@
     {
       "id": "22fff644-f54b-4c7e-95fa-56c1f61d00a6",
       "name": "오"
-    },
-    {
-      "id": "3393b6b4-bf4c-4166-9be6-afb2355312cb",
-      "name": "예"
     }
   ],
-  "participants": [
-    {
-      "id": "abe31435-b972-4a2a-b545-26e03c00029e",
-      "nickname": "정현수",
-      "group": "예",
-      "profit": 0
-    }
-  ]
+  "participants": []
 }
